@@ -29,6 +29,8 @@ resource "aws_subnet" "public" {
 
   cidr_block = element(var.public_subnets, count.index)
 
+  map_public_ip_on_launch = true
+
   tags = {
     Name = "${local.cluster_name}-public-subnet-${count.index}"
   }
@@ -174,7 +176,7 @@ resource "aws_eks_node_group" "example" {
   cluster_name    = aws_eks_cluster.example.name
   node_group_name = "${local.cluster_name}-node-group"
   node_role_arn   = aws_iam_role.eks_worker_nodes.arn
-  subnet_ids      = aws_subnet.private[*].id
+  subnet_ids      = aws_subnet.public[*].id
 
   scaling_config {
     desired_size = var.desired_capacity
