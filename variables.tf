@@ -21,3 +21,27 @@ variable "public_subnets" {
   type        = list(string)
   default     = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
 }
+
+variable "desired_capacity" {
+  description = "The desired number of worker nodes"
+  type        = number
+  default     = 1
+}
+
+variable "max_size" {
+  description = "The maximum number of worker nodes"
+  type        = number
+  default     = 1
+}
+
+variable "min_size" {
+  description = "The minimum number of worker nodes"
+  type        = number
+  default     = 1
+}
+
+variable "instance_type" {
+  description = "The instance type for the worker nodes"
+  type        = string
+  default     = "t2.micro"
+}

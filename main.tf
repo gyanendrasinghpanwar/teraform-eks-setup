@@ -117,6 +117,43 @@ resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSVPCResourceContr
   role       = aws_iam_role.eks_cluster.name
 }
 
+# IAM Role for EKS Worker Nodes
+resource "aws_iam_role" "eks_worker_nodes" {
+  name = "${local.cluster_name}-worker-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name = local.cluster_name
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "eks_worker_nodes_AmazonEKSWorkerNodePolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+  role       = aws_iam_role.eks_worker_nodes.name
+}
+
+resource "aws_iam_role_policy_attachment" "eks_worker_nodes_AmazonEC2ContainerRegistryReadOnly" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  role       = aws_iam_role.eks_worker_nodes.name
+}
+
+resource "aws_iam_role_policy_attachment" "eks_worker_nodes_AmazonEKS_CNI_Policy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+  role       = aws_iam_role.eks_worker_nodes.name
+}
+
 # EKS Cluster
 resource "aws_eks_cluster" "example" {
   name     = local.cluster_name
@@ -132,6 +169,23 @@ resource "aws_eks_cluster" "example" {
   }
 }
 
-output "cluster_name" {
-  value = aws_eks_cluster.example.name
+# EKS Node Group
+resource "aws_eks_node_group" "example" {
+  cluster_name    = aws_eks_cluster.example.name
+  node_group_name = "${local.cluster_name}-node-group"
+  node_role_arn   = aws_iam_role.eks_worker_nodes.arn
+  subnet_ids      = aws_subnet.private[*].id
+
+  scaling_config {
+    desired_size = var.desired_capacity
+    max_size     = var.max_size
+    min_size     = var.min_size
+  }
+
+  instance_types = [var.instance_type]
+
+  tags = {
+    Name                                          = local.cluster_name
+    "kubernetes.io/cluster/${local.cluster_name}" = "owned"
+  }
 }
